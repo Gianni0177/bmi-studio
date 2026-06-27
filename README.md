@@ -32,3 +32,9 @@ npm run build-win
 ```
 
 L'installer viene generato nella cartella `release/`.
+
+## Come condividerlo
+
+Per mandarlo a qualcuno, invia il file `release/BMI Studio Setup 1.0.0.exe`.
+
+Usa lo zip solo se ti serve una versione portabile senza installazione; in quel caso devi comprimere la cartella `release/win-unpacked/` e non il solo installer.
