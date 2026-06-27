@@ -306,12 +306,58 @@ body {
 }
 
 @media (max-width: 500px) {
+  .app-shell {
+    padding: 24px 16px 40px;
+    gap: 20px;
+  }
+
+  .hero h1 {
+    font-size: clamp(1.65rem, 7vw, 2.2rem);
+  }
+
+  .hero,
+  .lead {
+    text-align: left;
+  }
+
+  .lead {
+    max-width: none;
+  }
+
+  .card {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
   .input-grid,
   .legend {
     grid-template-columns: 1fr;
   }
 
-  .chart-card {
+  .result,
+  .charts {
+    margin-top: 12px;
+  }
+
+  .result {
     padding: 12px;
+  }
+
+  .chart-card {
+    padding: 12px 12px 10px;
+    border-radius: 14px;
+  }
+
+  .chart-note {
+    display: none;
+  }
+
+  .chart svg {
+    max-height: 145px;
+  }
+
+  .legend {
+    gap: 8px 10px;
+    font-size: 0.82rem;
   }
 }

@@ -11,6 +11,13 @@ const bmiCategoryEl = document.querySelector("#bmi-category");
 const bmiTipEl = document.querySelector("#bmi-tip");
 const bmiGaugeEl = document.querySelector("#bmi-gauge");
 const weightRangeEl = document.querySelector("#weight-range");
+const compactMediaQuery = window.matchMedia("(max-width: 500px)");
+
+const lastCalculation = {
+  heightCm: null,
+  weightKg: null,
+  bmi: null
+};
 
 const categories = [
   {
@@ -68,17 +75,21 @@ function formatOneDecimal(value) {
   return value.toFixed(1);
 }
 
-function renderBmiGauge(bmi) {
+function isCompactView() {
+  return compactMediaQuery.matches;
+}
+
+function renderBmiGauge(bmi, compact = isCompactView()) {
   if (!bmiGaugeEl) {
     return;
   }
 
   const width = 560;
-  const height = 168;
+  const height = compact ? 142 : 168;
   const barX = 24;
-  const barY = 64;
+  const barY = compact ? 58 : 64;
   const barWidth = width - barX * 2;
-  const barHeight = 18;
+  const barHeight = compact ? 16 : 18;
   const pointerX = barX + (clamp(bmi, 0, bmiScaleMax) / bmiScaleMax) * barWidth;
   const currentCategory = getCategory(bmi);
 
@@ -104,11 +115,23 @@ function renderBmiGauge(bmi) {
       return `
         <g>
           <line x1="${x}" y1="${barY - 8}" x2="${x}" y2="${barY + barHeight + 8}" stroke="rgba(19,35,34,0.12)" stroke-width="1" stroke-dasharray="2 4" />
-          <text x="${x}" y="${barY + 44}" text-anchor="middle" fill="${chartColors.muted}" font-size="12">${tick}</text>
+          <text x="${x}" y="${barY + (compact ? 34 : 44)}" text-anchor="middle" fill="${chartColors.muted}" font-size="${compact ? 11 : 12}">${tick}</text>
         </g>
       `;
     })
     .join("");
+
+  const bandLabels = compact
+    ? `
+      <text x="${barX}" y="${compact ? 100 : 112}" fill="${chartColors.muted}" font-size="12">Sottopeso</text>
+      <text x="${width / 2}" y="${compact ? 100 : 112}" text-anchor="middle" fill="${chartColors.muted}" font-size="12">Normopeso</text>
+      <text x="${width - barX}" y="${compact ? 100 : 112}" text-anchor="end" fill="${chartColors.muted}" font-size="12">Obesità</text>
+    `
+    : `
+      <text x="${barX}" y="112" fill="${chartColors.muted}" font-size="13">Sottopeso</text>
+      <text x="${width / 2}" y="112" text-anchor="middle" fill="${chartColors.muted}" font-size="13">Normopeso</text>
+      <text x="${width - barX}" y="112" text-anchor="end" fill="${chartColors.muted}" font-size="13">Obesità</text>
+    `;
 
   bmiGaugeEl.innerHTML = `
     <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Scala BMI con indicatore del valore attuale">
@@ -117,27 +140,25 @@ function renderBmiGauge(bmi) {
       ${ticks}
       <line x1="${pointerX}" y1="26" x2="${pointerX}" y2="${barY + barHeight + 26}" stroke="${chartColors.ink}" stroke-width="2.5" />
       <circle cx="${pointerX}" cy="${barY - 2}" r="7" fill="${chartColors.ink}" />
-      <rect x="${clamp(pointerX - 42, 16, width - 100)}" y="12" width="84" height="28" rx="14" fill="${chartColors.white}" stroke="rgba(19,35,34,0.14)" />
-      <text x="${clamp(pointerX, 58, width - 58)}" y="31" text-anchor="middle" fill="${chartColors.ink}" font-size="14" font-weight="700">BMI ${formatOneDecimal(bmi)}</text>
-      <text x="${barX}" y="112" fill="${chartColors.muted}" font-size="13">Sottopeso</text>
-      <text x="${width / 2}" y="112" text-anchor="middle" fill="${chartColors.muted}" font-size="13">Normopeso</text>
-      <text x="${width - barX}" y="112" text-anchor="end" fill="${chartColors.muted}" font-size="13">Obesità</text>
-      <text x="${width / 2}" y="146" text-anchor="middle" fill="${chartColors.ink}" font-size="13" font-weight="700">${currentCategory.label}</text>
+      <rect x="${clamp(pointerX - (compact ? 36 : 42), 16, width - (compact ? 92 : 100))}" y="12" width="${compact ? 72 : 84}" height="28" rx="14" fill="${chartColors.white}" stroke="rgba(19,35,34,0.14)" />
+      <text x="${clamp(pointerX, compact ? 52 : 58, width - (compact ? 52 : 58))}" y="31" text-anchor="middle" fill="${chartColors.ink}" font-size="${compact ? 13 : 14}" font-weight="700">BMI ${formatOneDecimal(bmi)}</text>
+      ${bandLabels}
+      <text x="${width / 2}" y="${compact ? 126 : 146}" text-anchor="middle" fill="${chartColors.ink}" font-size="${compact ? 12 : 13}" font-weight="700">${currentCategory.label}</text>
     </svg>
   `;
 }
 
-function renderWeightRange(heightCm, weightKg) {
+function renderWeightRange(heightCm, weightKg, compact = isCompactView()) {
   if (!weightRangeEl) {
     return;
   }
 
   const width = 560;
-  const height = 182;
+  const height = compact ? 158 : 182;
   const chartX = 24;
-  const chartY = 66;
+  const chartY = compact ? 60 : 66;
   const chartWidth = width - chartX * 2;
-  const chartHeight = 18;
+  const chartHeight = compact ? 16 : 18;
   const healthyMin = 18.5 * Math.pow(heightCm / 100, 2);
   const healthyMax = 24.9 * Math.pow(heightCm / 100, 2);
   const axisMin = Math.max(30, Math.min(healthyMin, weightKg) * 0.78);
@@ -160,6 +181,10 @@ function renderWeightRange(heightCm, weightKg) {
     ? `<rect x="${overStart}" y="${chartY}" width="${overWidth}" height="${chartHeight}" rx="9" fill="${chartColors.track}" />`
     : "";
 
+  const axisTextY = compact ? 106 : 112;
+  const summaryY = compact ? 138 : 150;
+  const footerY = compact ? 154 : 170;
+
   weightRangeEl.innerHTML = `
     <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Range di peso consigliato per l'altezza inserita">
       ${underSegment}
@@ -167,14 +192,14 @@ function renderWeightRange(heightCm, weightKg) {
       ${overSegment}
       <line x1="${pointerX}" y1="26" x2="${pointerX}" y2="${chartY + chartHeight + 28}" stroke="${chartColors.ink}" stroke-width="2.5" />
       <circle cx="${pointerX}" cy="${chartY - 2}" r="7" fill="${chartColors.ink}" />
-      <rect x="${clamp(pointerX - 58, 16, width - 132)}" y="12" width="116" height="28" rx="14" fill="${chartColors.white}" stroke="rgba(19,35,34,0.14)" />
-      <text x="${clamp(pointerX, 74, width - 74)}" y="31" text-anchor="middle" fill="${chartColors.ink}" font-size="14" font-weight="700">${formatOneDecimal(weightKg)} kg</text>
-      <text x="${minLabelX}" y="112" fill="${chartColors.muted}" font-size="13">${formatOneDecimal(axisMin)} kg</text>
-      <text x="${rangeStart}" y="112" text-anchor="middle" fill="${chartColors.muted}" font-size="13">${formatOneDecimal(healthyMin)} kg</text>
-      <text x="${rangeStart + rangeWidth}" y="112" text-anchor="middle" fill="${chartColors.muted}" font-size="13">${formatOneDecimal(healthyMax)} kg</text>
-      <text x="${maxLabelX}" y="112" text-anchor="end" fill="${chartColors.muted}" font-size="13">${formatOneDecimal(axisMax)} kg</text>
-      <text x="${width / 2}" y="150" text-anchor="middle" fill="${chartColors.ink}" font-size="13" font-weight="700">Peso sano stimato: ${formatOneDecimal(healthyMin)} - ${formatOneDecimal(healthyMax)} kg</text>
-      <text x="${width / 2}" y="170" text-anchor="middle" fill="${chartColors.muted}" font-size="12">Calcolato sul normopeso (BMI 18.5 - 24.9)</text>
+      <rect x="${clamp(pointerX - (compact ? 48 : 58), 16, width - (compact ? 120 : 132))}" y="12" width="${compact ? 96 : 116}" height="28" rx="14" fill="${chartColors.white}" stroke="rgba(19,35,34,0.14)" />
+      <text x="${clamp(pointerX, compact ? 64 : 74, width - (compact ? 64 : 74))}" y="31" text-anchor="middle" fill="${chartColors.ink}" font-size="${compact ? 13 : 14}" font-weight="700">${formatOneDecimal(weightKg)} kg</text>
+      <text x="${minLabelX}" y="${axisTextY}" fill="${chartColors.muted}" font-size="${compact ? 12 : 13}">${formatOneDecimal(axisMin)} kg</text>
+      <text x="${rangeStart}" y="${axisTextY}" text-anchor="middle" fill="${chartColors.muted}" font-size="${compact ? 12 : 13}">${formatOneDecimal(healthyMin)} kg</text>
+      <text x="${rangeStart + rangeWidth}" y="${axisTextY}" text-anchor="middle" fill="${chartColors.muted}" font-size="${compact ? 12 : 13}">${formatOneDecimal(healthyMax)} kg</text>
+      <text x="${maxLabelX}" y="${axisTextY}" text-anchor="end" fill="${chartColors.muted}" font-size="${compact ? 12 : 13}">${formatOneDecimal(axisMax)} kg</text>
+      <text x="${width / 2}" y="${summaryY}" text-anchor="middle" fill="${chartColors.ink}" font-size="${compact ? 12 : 13}" font-weight="700">Peso sano stimato: ${formatOneDecimal(healthyMin)} - ${formatOneDecimal(healthyMax)} kg</text>
+      <text x="${width / 2}" y="${footerY}" text-anchor="middle" fill="${chartColors.muted}" font-size="${compact ? 11 : 12}">Calcolato sul normopeso (BMI 18.5 - 24.9)</text>
     </svg>
   `;
 }
@@ -218,6 +243,19 @@ function renderResult(bmi) {
   renderBmiGauge(bmi);
 }
 
+function renderCharts() {
+  if (
+    lastCalculation.heightCm === null ||
+    lastCalculation.weightKg === null ||
+    lastCalculation.bmi === null
+  ) {
+    return;
+  }
+
+  renderBmiGauge(lastCalculation.bmi);
+  renderWeightRange(lastCalculation.heightCm, lastCalculation.weightKg);
+}
+
 form?.addEventListener("submit", (event) => {
   event.preventDefault();
 
@@ -233,6 +271,13 @@ form?.addEventListener("submit", (event) => {
   clearError();
   const heightM = heightCm / 100;
   const bmi = weightKg / (heightM * heightM);
+
+  lastCalculation.heightCm = heightCm;
+  lastCalculation.weightKg = weightKg;
+  lastCalculation.bmi = bmi;
+
   renderResult(bmi);
   renderWeightRange(heightCm, weightKg);
 });
+
+compactMediaQuery.addEventListener("change", renderCharts);
