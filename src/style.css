@@ -171,6 +171,47 @@ body {
   animation: reveal 280ms ease;
 }
 
+.charts {
+  margin-top: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.chart-card {
+  border: 1px solid #ead7c3;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fffaf1 0%, #fff4e7 100%);
+  padding: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.chart-head {
+  margin-bottom: 10px;
+}
+
+.chart-label {
+  margin: 0 0 2px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.chart-note {
+  margin: 0;
+  color: #6a5a49;
+  font-size: 0.88rem;
+}
+
+.chart {
+  width: 100%;
+  overflow: hidden;
+}
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .hidden {
   display: none;
 }
@@ -268,5 +309,9 @@ body {
   .input-grid,
   .legend {
     grid-template-columns: 1fr;
+  }
+
+  .chart-card {
+    padding: 12px;
   }
 }

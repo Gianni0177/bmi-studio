@@ -5,30 +5,37 @@ const heightInput = document.querySelector("#height");
 const weightInput = document.querySelector("#weight");
 const errorBox = document.querySelector("#error");
 const resultBox = document.querySelector("#result");
+const chartsBox = document.querySelector("#charts");
 const bmiValueEl = document.querySelector("#bmi-value");
 const bmiCategoryEl = document.querySelector("#bmi-category");
 const bmiTipEl = document.querySelector("#bmi-tip");
+const bmiGaugeEl = document.querySelector("#bmi-gauge");
+const weightRangeEl = document.querySelector("#weight-range");
 
 const categories = [
   {
+    min: 0,
     max: 18.5,
     label: "Sottopeso",
     className: "under",
     tip: "Puoi puntare su alimentazione bilanciata e allenamento di forza leggero."
   },
   {
+    min: 18.5,
     max: 25,
     label: "Normopeso",
     className: "normal",
     tip: "Ottimo range: continua con routine attiva e alimentazione regolare."
   },
   {
+    min: 25,
     max: 30,
     label: "Sovrappeso",
     className: "over",
     tip: "Piccoli cambiamenti costanti su dieta e movimento fanno la differenza."
   },
   {
+    min: 30,
     max: Number.POSITIVE_INFINITY,
     label: "Obesita",
     className: "obese",
@@ -36,8 +43,140 @@ const categories = [
   }
 ];
 
+const bmiScaleMax = 40;
+
+const chartColors = {
+  under: "#f9c8c8",
+  normal: "#9fe3c3",
+  over: "#ffd19b",
+  obese: "#f2a7a7",
+  ink: "#132322",
+  muted: "#66757a",
+  track: "#eadfd2",
+  white: "#fffdf8"
+};
+
 function getCategory(bmi) {
   return categories.find((item) => bmi < item.max) ?? categories[categories.length - 1];
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function formatOneDecimal(value) {
+  return value.toFixed(1);
+}
+
+function renderBmiGauge(bmi) {
+  if (!bmiGaugeEl) {
+    return;
+  }
+
+  const width = 560;
+  const height = 168;
+  const barX = 24;
+  const barY = 64;
+  const barWidth = width - barX * 2;
+  const barHeight = 18;
+  const pointerX = barX + (clamp(bmi, 0, bmiScaleMax) / bmiScaleMax) * barWidth;
+  const currentCategory = getCategory(bmi);
+
+  const segments = categories
+    .map((category) => {
+      const segmentStart = category.min;
+      const segmentEnd = Math.min(category.max, bmiScaleMax);
+      if (segmentEnd <= segmentStart) {
+        return "";
+      }
+
+      const x = barX + (segmentStart / bmiScaleMax) * barWidth;
+      const segmentWidth = ((segmentEnd - segmentStart) / bmiScaleMax) * barWidth;
+      const fill = chartColors[category.className] ?? chartColors.track;
+
+      return `<rect x="${x}" y="${barY}" width="${segmentWidth}" height="${barHeight}" rx="9" fill="${fill}" />`;
+    })
+    .join("");
+
+  const ticks = [18.5, 25, 30]
+    .map((tick) => {
+      const x = barX + (tick / bmiScaleMax) * barWidth;
+      return `
+        <g>
+          <line x1="${x}" y1="${barY - 8}" x2="${x}" y2="${barY + barHeight + 8}" stroke="rgba(19,35,34,0.12)" stroke-width="1" stroke-dasharray="2 4" />
+          <text x="${x}" y="${barY + 44}" text-anchor="middle" fill="${chartColors.muted}" font-size="12">${tick}</text>
+        </g>
+      `;
+    })
+    .join("");
+
+  bmiGaugeEl.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Scala BMI con indicatore del valore attuale">
+      <rect x="${barX}" y="${barY}" width="${barWidth}" height="${barHeight}" rx="9" fill="${chartColors.track}" />
+      ${segments}
+      ${ticks}
+      <line x1="${pointerX}" y1="26" x2="${pointerX}" y2="${barY + barHeight + 26}" stroke="${chartColors.ink}" stroke-width="2.5" />
+      <circle cx="${pointerX}" cy="${barY - 2}" r="7" fill="${chartColors.ink}" />
+      <rect x="${clamp(pointerX - 42, 16, width - 100)}" y="12" width="84" height="28" rx="14" fill="${chartColors.white}" stroke="rgba(19,35,34,0.14)" />
+      <text x="${clamp(pointerX, 58, width - 58)}" y="31" text-anchor="middle" fill="${chartColors.ink}" font-size="14" font-weight="700">BMI ${formatOneDecimal(bmi)}</text>
+      <text x="${barX}" y="112" fill="${chartColors.muted}" font-size="13">Sottopeso</text>
+      <text x="${width / 2}" y="112" text-anchor="middle" fill="${chartColors.muted}" font-size="13">Normopeso</text>
+      <text x="${width - barX}" y="112" text-anchor="end" fill="${chartColors.muted}" font-size="13">Obesità</text>
+      <text x="${width / 2}" y="146" text-anchor="middle" fill="${chartColors.ink}" font-size="13" font-weight="700">${currentCategory.label}</text>
+    </svg>
+  `;
+}
+
+function renderWeightRange(heightCm, weightKg) {
+  if (!weightRangeEl) {
+    return;
+  }
+
+  const width = 560;
+  const height = 182;
+  const chartX = 24;
+  const chartY = 66;
+  const chartWidth = width - chartX * 2;
+  const chartHeight = 18;
+  const healthyMin = 18.5 * Math.pow(heightCm / 100, 2);
+  const healthyMax = 24.9 * Math.pow(heightCm / 100, 2);
+  const axisMin = Math.max(30, Math.min(healthyMin, weightKg) * 0.78);
+  const axisMax = Math.min(300, Math.max(healthyMax, weightKg) * 1.22);
+  const span = Math.max(axisMax - axisMin, 1);
+  const rangeStart = chartX + ((healthyMin - axisMin) / span) * chartWidth;
+  const rangeWidth = ((healthyMax - healthyMin) / span) * chartWidth;
+  const pointerX = chartX + ((weightKg - axisMin) / span) * chartWidth;
+  const underWidth = Math.max(rangeStart - chartX, 0);
+  const overStart = rangeStart + rangeWidth;
+  const overWidth = Math.max(chartX + chartWidth - overStart, 0);
+  const minLabelX = chartX;
+  const maxLabelX = chartX + chartWidth;
+
+  const underSegment = underWidth
+    ? `<rect x="${chartX}" y="${chartY}" width="${underWidth}" height="${chartHeight}" rx="9" fill="${chartColors.track}" />`
+    : "";
+  const healthySegment = `<rect x="${rangeStart}" y="${chartY}" width="${rangeWidth}" height="${chartHeight}" rx="9" fill="${chartColors.normal}" />`;
+  const overSegment = overWidth
+    ? `<rect x="${overStart}" y="${chartY}" width="${overWidth}" height="${chartHeight}" rx="9" fill="${chartColors.track}" />`
+    : "";
+
+  weightRangeEl.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Range di peso consigliato per l'altezza inserita">
+      ${underSegment}
+      ${healthySegment}
+      ${overSegment}
+      <line x1="${pointerX}" y1="26" x2="${pointerX}" y2="${chartY + chartHeight + 28}" stroke="${chartColors.ink}" stroke-width="2.5" />
+      <circle cx="${pointerX}" cy="${chartY - 2}" r="7" fill="${chartColors.ink}" />
+      <rect x="${clamp(pointerX - 58, 16, width - 132)}" y="12" width="116" height="28" rx="14" fill="${chartColors.white}" stroke="rgba(19,35,34,0.14)" />
+      <text x="${clamp(pointerX, 74, width - 74)}" y="31" text-anchor="middle" fill="${chartColors.ink}" font-size="14" font-weight="700">${formatOneDecimal(weightKg)} kg</text>
+      <text x="${minLabelX}" y="112" fill="${chartColors.muted}" font-size="13">${formatOneDecimal(axisMin)} kg</text>
+      <text x="${rangeStart}" y="112" text-anchor="middle" fill="${chartColors.muted}" font-size="13">${formatOneDecimal(healthyMin)} kg</text>
+      <text x="${rangeStart + rangeWidth}" y="112" text-anchor="middle" fill="${chartColors.muted}" font-size="13">${formatOneDecimal(healthyMax)} kg</text>
+      <text x="${maxLabelX}" y="112" text-anchor="end" fill="${chartColors.muted}" font-size="13">${formatOneDecimal(axisMax)} kg</text>
+      <text x="${width / 2}" y="150" text-anchor="middle" fill="${chartColors.ink}" font-size="13" font-weight="700">Peso sano stimato: ${formatOneDecimal(healthyMin)} - ${formatOneDecimal(healthyMax)} kg</text>
+      <text x="${width / 2}" y="170" text-anchor="middle" fill="${chartColors.muted}" font-size="12">Calcolato sul normopeso (BMI 18.5 - 24.9)</text>
+    </svg>
+  `;
 }
 
 function validateValues(heightCm, weightKg) {
@@ -59,6 +198,7 @@ function validateValues(heightCm, weightKg) {
 function renderError(message) {
   errorBox.textContent = message;
   resultBox.classList.add("hidden");
+  chartsBox?.classList.add("hidden");
 }
 
 function clearError() {
@@ -67,13 +207,15 @@ function clearError() {
 
 function renderResult(bmi) {
   const category = getCategory(bmi);
-  const rounded = bmi.toFixed(1);
+  const rounded = formatOneDecimal(bmi);
 
   resultBox.classList.remove("hidden");
+  chartsBox?.classList.remove("hidden");
   bmiValueEl.textContent = rounded;
   bmiCategoryEl.textContent = category.label;
   bmiCategoryEl.className = `badge ${category.className}`;
   bmiTipEl.textContent = category.tip;
+  renderBmiGauge(bmi);
 }
 
 form?.addEventListener("submit", (event) => {
@@ -92,4 +234,5 @@ form?.addEventListener("submit", (event) => {
   const heightM = heightCm / 100;
   const bmi = weightKg / (heightM * heightM);
   renderResult(bmi);
+  renderWeightRange(heightCm, weightKg);
 });

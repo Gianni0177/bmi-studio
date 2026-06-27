@@ -81,6 +81,24 @@
           <p id="bmi-tip" class="tip">--</p>
         </div>
 
+        <div id="charts" class="charts hidden" aria-live="polite">
+          <article class="chart-card">
+            <div class="chart-head">
+              <p class="chart-label">Scala BMI</p>
+              <p class="chart-note">Posizione del tuo indice rispetto alle fasce standard</p>
+            </div>
+            <div id="bmi-gauge" class="chart" aria-label="Grafico scala BMI"></div>
+          </article>
+
+          <article class="chart-card">
+            <div class="chart-head">
+              <p class="chart-label">Peso in relazione all'altezza</p>
+              <p class="chart-note">Intervallo di peso associato al normopeso per la tua altezza</p>
+            </div>
+            <div id="weight-range" class="chart" aria-label="Grafico range di peso"></div>
+          </article>
+        </div>
+
         <div class="legend">
           <p><strong>&lt; 18.5</strong> Sottopeso</p>
           <p><strong>18.5 - 24.9</strong> Normopeso</p>
