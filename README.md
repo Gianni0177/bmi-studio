@@ -7,6 +7,11 @@ Calcolatore BMI con interfaccia web moderna, eseguibile anche come app desktop t
 - Node.js 20+
 - npm
 
+## Installazione dipendenze
+```bash
+npm i
+```
+
 ## Avvio in modalita web
 
 ```bash
