@@ -30,7 +30,7 @@ npm run electron-dev
 npm run build-web
 ```
 
-## Build installer Windows (.exe)
+## Build installer Windows e variante portable(.exe)
 
 ```bash
 npm run build-win
