@@ -24,7 +24,7 @@ npm run dev
 npm run electron-dev
 ```
 
-## Build web (non funziona)
+## ~~Build web~~ (non funziona)
 
 ```bash
 npm run build-web
