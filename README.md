@@ -19,7 +19,7 @@ npm run dev
 npm run electron-dev
 ```
 
-## Build web
+## Build web (sperimentale)
 
 ```bash
 npm run build-web
